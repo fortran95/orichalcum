@@ -2,7 +2,7 @@
 
 # This is used to check and pull messages from given server.
 
-import ConfigParser, os, pycurl, StringIO, urllib, json
+import ConfigParser, os, pycurl, StringIO, urllib, json, shelve
 import hashcash
 
 def check_messages_list(server,username,secret):
@@ -73,15 +73,17 @@ def push_message(server,receiver,message):
     else:
         return False
 if __name__ == '__main__':
-    host = 'babeltower.sinaapp.com'
-    #print push_message(host,'admin',"""
-    print "geting codes."
-    codes = check_messages_list(host,'admin','admin')
-    if codes != False:
-        print codes
-        print "-- geting first message."
-        j = pull_message('babeltower.sinaapp.com',codes[0])
-        if j != False:
-            print "-- message is here --"
-            print j['message']
-    #""")
+#    host = 'babeltower.sinaapp.com'
+#    #print push_message(host,'admin',"""
+#    print "geting codes."
+#    codes = check_messages_list(host,'admin','admin')
+#    if codes != False:
+#        print codes
+#        print "-- geting first message."
+#        j = pull_message('babeltower.sinaapp.com',codes[0])
+#        if j != False:
+#            print "-- message is here --"
+#            print j['message']
+#    #""")
+    sh = shelve.open("orichalcum.db",writeback=True)
+    sh.close()
