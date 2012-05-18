@@ -1,6 +1,6 @@
 import os
-def hashcash(resource,bits=20):
-    x = os.popen("hashcash -es -mb %d %s" % (bits,resource))
+def hashcash(sender,resource,bits=20):
+    x = os.popen("hashcash -es -mb %d %s:%s" % (bits,sender,resource))
     h = x.readline()
     return h
 

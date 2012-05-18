@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 import pynotify
-import time,os,subprocess
+import time,subprocess
 
 def osd(message,desc=None):
     for i in range(0,3):
-        osd_write(message)
+        osd_write(message,450.0)
     if desc != None:
         for key in desc:
-            osd_write(key)
-def osd_write(message):
+            osd_write(key,1500.0)
+def osd_write(message,timed=450.0):
     ps = subprocess.Popen('gnome-osd-client -fs',shell=True,stdin=subprocess.PIPE)
-    ps.stdin.write("""<message id='test' hide_timeout='450' osd_vposition='top' osd_halignment='center'>\n\n<span foreground='#FF0000'>%s</span></message>""" % message)
+    ps.stdin.write("""<message id='test' hide_timeout='%d' osd_vposition='top' osd_halignment='center'>\n\n<span foreground='#FF0000'>%s</span></message>""" % (timed,message))
     ps.communicate()
-    time.sleep(0.6)
+    time.sleep((timed + 150) / 1000)
 def gnotify(message,desc):
     pynotify.init("Orichalcum")
     n = pynotify.Notification(message,desc)
@@ -21,5 +21,5 @@ def gnotify(message,desc):
     n.show()
     time.sleep(1)
 if __name__ == '__main__':
-    osd('未读消息：3条')
-    #gnotify('title','my test message')
+    #osd('未读消息：3条')
+    osd('地震速报',['2008年5月12日 午后2时28分','四川省汶川县发生7.8级地震'])
