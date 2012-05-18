@@ -3,7 +3,7 @@
 # This is used to check and pull messages from given server.
 
 import ConfigParser, os, pycurl, StringIO, urllib, json, shelve, hashlib, hmac, time
-import hashcash
+import hashcash,notifier
 def victoria_decrypt(inputstr,key):
     output = ''
     keylen = len(key)
@@ -132,9 +132,12 @@ if __name__ == '__main__':
         sh = shelve.open("configs/orichalcum.db",writeback=True)
         
         now = time.time()
+        new_messages = 0
         
         if not sh.has_key('accounts'):
             sh['accounts'] = {}
+        if not sh.has_key('last_message_notify'):
+            sh['last_message_notify'] = 0
         
         for key in accounts:
             if now - accounts[key]['lastls'] > 30:
@@ -142,7 +145,7 @@ if __name__ == '__main__':
                 # VISIT THE SITE
                 codes = check_messages_list(accounts[key]['host'],accounts[key]['user'],accounts[key]['secret'],bits=24)
                 if codes != False:
-                    print "Listing: %d new message(s) found." % count(codes)
+                    print "Listing: %d new message(s) found." % len(codes)
                     for code in codes:
                         # Save required code.
                         if not sh['accounts'].has_key(key):
@@ -150,9 +153,13 @@ if __name__ == '__main__':
                         sh['accounts'][key]['codes'].append(code)
                 else:
                     print codes
+        # Pull messages
         for key in accounts:
             if now - accounts[key]['lastpull'] > 30:
                 accounts[key]['lastpull'] = now
+                
+                pulled = []
+                
                 for pullcode in sh['accounts'][key]['codes']:
                     print "Pulling message ID = %s ..." % pullcode
                     pm = pull_message(accounts[key]['host'],accounts[key]['user'],pullcode,bits=24)
@@ -160,6 +167,19 @@ if __name__ == '__main__':
                         print "(Message retrived successfully.)"
                         sh['accounts'][key]['messages'].append(pm)
                     else:
-                        print "(Error in retriving message.)
+                        print "(Error in retriving message.)"
+                    pulled.append(pullcode)
+                
+                for todel in pulled:
+                    if todel in sh['accounts'][key]['codes']:
+                        sh['accounts'][key]['codes'].remove(todel)
+                    
+                new_messages += len(sh['accounts'][key]['messages'])
+                
+                
+        if now - sh['last_message_notify'] > 60:
+            if new_messages > 0:
+                notifier.osd("%d 条新信息" % new_messages)
+            sh['last_message_notify'] = now
         sh.close()
     job()
