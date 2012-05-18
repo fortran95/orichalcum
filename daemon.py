@@ -102,9 +102,9 @@ def push_message(server,sender,secret,receiver,message,bits=22):
         return False
 if __name__ == '__main__':
     host = 'babeltower.sinaapp.com'
-    #print push_message(host,'admin','admin','admin',"""
-    print "geting codes."
-    codes = check_messages_list(host,'admin','admin',bits=24)
+    print push_message(host,'admin','admin','admin',"""
+    #print "geting codes."
+    #codes = check_messages_list(host,'admin','admin',bits=24)
     if codes != False:
         print codes
         print "-- getting first message."
@@ -112,9 +112,7 @@ if __name__ == '__main__':
         if j != False:
             print "-- message is here --"
             print j['message']
-    #""",bits=24)
-    exit()
-
+    """,bits=24)
     accounts = {}
     
     accountfile = ConfigParser.ConfigParser()
@@ -134,16 +132,34 @@ if __name__ == '__main__':
         sh = shelve.open("configs/orichalcum.db",writeback=True)
         
         now = time.time()
+        
+        if not sh.has_key('accounts'):
+            sh['accounts'] = {}
+        
         for key in accounts:
-            if now - acounts[key]['lastls'] > 30:
-                accounts[key]['lastls'] = 30
+            if now - accounts[key]['lastls'] > 30:
+                accounts[key]['lastls'] = now
                 # VISIT THE SITE
                 codes = check_messages_list(accounts[key]['host'],accounts[key]['user'],accounts[key]['secret'],bits=24)
                 if codes != False:
+                    print "Listing: %d new message(s) found." % count(codes)
                     for code in codes:
                         # Save required code.
+                        if not sh['accounts'].has_key(key):
+                            sh['accounts'][key] = {'codes':[],'messages':[]}
                         sh['accounts'][key]['codes'].append(code)
                 else:
                     print codes
+        for key in accounts:
+            if now - accounts[key]['lastpull'] > 30:
+                accounts[key]['lastpull'] = now
+                for pullcode in sh['accounts'][key]['codes']:
+                    print "Pulling message ID = %s ..." % pullcode
+                    pm = pull_message(accounts[key]['host'],accounts[key]['user'],pullcode,bits=24)
+                    if pm != False:
+                        print "(Message retrived successfully.)"
+                        sh['accounts'][key]['messages'].append(pm)
+                    else:
+                        print "(Error in retriving message.)
         sh.close()
     job()
