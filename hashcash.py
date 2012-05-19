@@ -2,7 +2,7 @@ import os
 
 def hashcash(sender,resource,bits=20):
     print ":NEW HASHCASH GENERATING:"
-    x = os.popen("hashcash -es -mb %d %s:%s" % (bits,sender,resource))
+    x = os.popen("hashcash -es -mb %s %s:%s" % (bits,sender,resource))
     h = x.readline()
     print "- HASHCASH GENERATED -"
     return h

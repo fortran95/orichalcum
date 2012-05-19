@@ -112,6 +112,7 @@ if __name__ == '__main__':
                 'host':accountfile.get(secname,'host'),
                 'user':accountfile.get(secname,'user'),
                 'secret':accountfile.get(secname,'secret'),
+                'bits':accountfile.get(secname,'bits'),
                 'lastls':0,
                 'lastpull':30,
             }
@@ -132,12 +133,12 @@ if __name__ == '__main__':
             if now - accounts[key]['lastls'] > 30:
                 accounts[key]['lastls'] = now
                 # VISIT THE SITE
-                codes = check_messages_list(accounts[key]['host'],accounts[key]['user'],accounts[key]['secret'],bits=24)
+                codes = check_messages_list(accounts[key]['host'],accounts[key]['user'],accounts[key]['secret'],accounts[key]['bits'])
                 if codes != False:
                     print "Listing: %d new message(s) found." % len(codes)
                     for code in codes:
                         # Save required code.
-                        if not sh['accounts'].has_key(key):
+                        if sh['accounts'].has_key(key) == False:
                             sh['accounts'][key] = {'codes':[],'messages':[]}
                         sh['accounts'][key]['codes'].append(code)
                 else:
@@ -149,9 +150,12 @@ if __name__ == '__main__':
                 
                 pulled = []
                 
+                if sh['accounts'].has_key(key) == False:
+                    sh['accounts'][key] = {'codes':[],'messages':[]}
+                
                 for pullcode in sh['accounts'][key]['codes']:
                     print "Pulling message ID = %s ..." % pullcode
-                    pm = pull_message(accounts[key]['host'],accounts[key]['user'],pullcode,bits=24)
+                    pm = pull_message(accounts[key]['host'],accounts[key]['user'],pullcode,accounts[key]['bits'])
                     if pm != False:
                         print "(Message retrived successfully.)"
                         sh['accounts'][key]['messages'].append(pm)

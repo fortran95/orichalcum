@@ -27,6 +27,7 @@ if accountfile.has_section(options.account) == False:
 host = accountfile.get(options.account,'host')
 user = accountfile.get(options.account,'user')
 secret=accountfile.get(options.account,'secret')
+bits = accountfile.get(options.account,'bits')
 
 # Read file to get message
 if options.input == False:
@@ -46,4 +47,4 @@ else:
         
 print "-------- Will now push the message --------"
 
-print daemon.push_message(host,user,secret,options.receiver,message,bits=24)
+print daemon.push_message(host,user,secret,options.receiver,message,bits)
