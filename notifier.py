@@ -17,12 +17,14 @@ def osd_write(message,timed=450.0):
     ps.communicate()
     time.sleep((timed + 150) / 1000)
 def gnotify(message,desc):
+    ns = subprocess.Popen(['mpg123','-q','alarms/caution.mp3'])
     pynotify.init("Orichalcum")
     n = pynotify.Notification(message,desc)
     n.set_urgency(pynotify.URGENCY_NORMAL)
-    n.set_timeout(5)
+    n.set_timeout(15)
     n.show()
     time.sleep(1)
 if __name__ == '__main__':
-    osd('未读消息：3条')
+    #osd('未读消息：3条')
     #osd('地震速报',['2008年5月12日 午后2时28分','四川省汶川县发生7.8级地震'])
+    gnotify("New message","content" * 64)

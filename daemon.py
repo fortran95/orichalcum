@@ -101,18 +101,7 @@ def push_message(server,sender,secret,receiver,message,bits=22):
     else:
         return False
 if __name__ == '__main__':
-    host = 'babeltower.sinaapp.com'
-    print push_message(host,'admin','admin','admin',"""
-    #print "geting codes."
-    #codes = check_messages_list(host,'admin','admin',bits=24)
-    if codes != False:
-        print codes
-        print "-- getting first message."
-        j = pull_message('babeltower.sinaapp.com','admin',codes[0],bits=24)
-        if j != False:
-            print "-- message is here --"
-            print j['message']
-    """,bits=24)
+    
     accounts = {}
     
     accountfile = ConfigParser.ConfigParser()
