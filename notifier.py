@@ -10,6 +10,7 @@ def osd(message,desc=None):
         ns = subprocess.Popen(['mpg123','-q','alarms/notify.mp3'])
         for key in desc:
             osd_write(key,1500.0)
+    
 def osd_write(message,timed=450.0):
     ps = subprocess.Popen('gnome-osd-client -fs',shell=True,stdin=subprocess.PIPE)
     ps.stdin.write("""<message id='test' hide_timeout='%d' osd_vposition='top' osd_halignment='center'>\n\n<span foreground='#FF0000'>%s</span></message>""" % (timed,message))

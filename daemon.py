@@ -3,7 +3,7 @@
 # This is used to check and pull messages from given server.
 
 import ConfigParser, os, pycurl, StringIO, urllib, json, shelve, hashlib, hmac, time
-import hashcash,notifier
+import hashcash,notifier,processor
 def victoria_decrypt(inputstr,key):
     output = ''
     keylen = len(key)
@@ -126,18 +126,18 @@ if __name__ == '__main__':
                 'lastls':0,
                 'lastpull':30,
             }
+        
+    last_message_notify = 0
     
     def job():
-        global accounts
+        global accounts,last_message_notify
         sh = shelve.open("configs/orichalcum.db",writeback=True)
         
         now = time.time()
         new_messages = 0
         
-        if not sh.has_key('accounts'):
+        if sh.has_key('accounts') == False:
             sh['accounts'] = {}
-        if not sh.has_key('last_message_notify'):
-            sh['last_message_notify'] = 0
         
         for key in accounts:
             if now - accounts[key]['lastls'] > 30:
@@ -173,13 +173,28 @@ if __name__ == '__main__':
                 for todel in pulled:
                     if todel in sh['accounts'][key]['codes']:
                         sh['accounts'][key]['codes'].remove(todel)
+                        
+                dellist = []
+                for msgkey in sh['accounts'][key]['messages']:
+                    if processor.handle(msgkey) == True:
+                        dellist.append(msgkey)
+                for todel in dellist:
+                    sh['accounts'][key]['messages'].remove(todel)
+                    
                     
                 new_messages += len(sh['accounts'][key]['messages'])
                 
-                
-        if now - sh['last_message_notify'] > 60:
+        notify_timed = now - last_message_notify
+        if notify_timed > 60:
             if new_messages > 0:
                 notifier.osd("%d 条新信息" % new_messages)
-            sh['last_message_notify'] = now
+                last_message_notify = now
+                
+            
         sh.close()
-    job()
+# Start daemon.
+    while True:
+        print ' ' * 10 + "Time to check my job."
+        job()
+        print ' ' * 10 + "My job finished."
+        time.sleep(10)
