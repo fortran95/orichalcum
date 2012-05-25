@@ -2,8 +2,13 @@
 
 # This is used to check and pull messages from given server.
 
-import ConfigParser, os, pycurl, StringIO, urllib, json, shelve, hashlib, hmac, time
+import ConfigParser, sys, os, pycurl, StringIO, urllib, json, shelve, hashlib, hmac, time
 import hashcash,notifier,processor
+
+BASEPATH = os.path.dirname(sys.argv[0])
+if BASEPATH != '':
+    BASEPATH += '/'
+
 def victoria_decrypt(inputstr,key):
     output = ''
     keylen = len(key)
@@ -32,15 +37,18 @@ def check_messages_list(server,username,secret,bits=22):
     url = "http://%s/pull.php" % server
     post = {'hashcash':hc,'auth':auth}
     
-    c = pycurl.Curl()
-    c.setopt(pycurl.URL,url)
-    c.setopt(pycurl.SSL_VERIFYHOST, False)
-    c.setopt(pycurl.SSL_VERIFYPEER,False)
-    c.setopt(pycurl.WRITEFUNCTION, html.write)
-    c.setopt(pycurl.FOLLOWLOCATION, 1)
-    c.setopt(pycurl.POSTFIELDS, urllib.urlencode(post))
-    c.perform()
-    
+    try:
+        c = pycurl.Curl()
+        c.setopt(pycurl.URL,url)
+        c.setopt(pycurl.SSL_VERIFYHOST, False)
+        c.setopt(pycurl.SSL_VERIFYPEER,False)
+        c.setopt(pycurl.WRITEFUNCTION, html.write)
+        c.setopt(pycurl.FOLLOWLOCATION, 1)
+        c.setopt(pycurl.POSTFIELDS, urllib.urlencode(post))
+        c.perform()
+    except Exception,e:
+        print "Orichalcum Daemon Error, Cannot Connect To Server."
+        return False
     if c.getinfo(pycurl.HTTP_CODE)==200:
         retrived = html.getvalue()
         try:
@@ -105,7 +113,7 @@ if __name__ == '__main__':
     accounts = {}
     
     accountfile = ConfigParser.ConfigParser()
-    accountfile.read('configs/accounts.cfg')
+    accountfile.read(BASEPATH + 'configs/accounts.cfg')
     
     for secname in accountfile.sections():
         accounts[secname] = {
@@ -120,11 +128,10 @@ if __name__ == '__main__':
     last_message_notify = 0
     
     def job():
-        global accounts,last_message_notify
-        sh = shelve.open("configs/orichalcum.db",writeback=True)
+        global accounts,last_message_notify,BASE_PATH
+        sh = shelve.open(BASEPATH + "configs/orichalcum.db",writeback=True)
         
         now = time.time()
-        new_messages = 0
         
         if sh.has_key('accounts') == False:
             sh['accounts'] = {}
@@ -151,14 +158,14 @@ if __name__ == '__main__':
                 pulled = []
                 
                 if sh['accounts'].has_key(key) == False:
-                    sh['accounts'][key] = {'codes':[],'messages':[]}
+                    sh['accounts'][key] = {'codes':[]}
                 
                 for pullcode in sh['accounts'][key]['codes']:
                     print "Pulling message ID = %s ..." % pullcode
                     pm = pull_message(accounts[key]['host'],accounts[key]['user'],pullcode,accounts[key]['bits'])
                     if pm != False:
                         print "(Message retrived successfully.)"
-                        sh['accounts'][key]['messages'].append(pm)
+                        processor.handle(pm)
                     else:
                         print "(Error in retriving message.)"
                     pulled.append(pullcode)
@@ -166,23 +173,11 @@ if __name__ == '__main__':
                 for todel in pulled:
                     if todel in sh['accounts'][key]['codes']:
                         sh['accounts'][key]['codes'].remove(todel)
-                        
-                dellist = []
-                for msgkey in sh['accounts'][key]['messages']:
-                    if processor.handle(msgkey) == True:
-                        dellist.append(msgkey)
-                for todel in dellist:
-                    sh['accounts'][key]['messages'].remove(todel)
-                    
-                    
-                new_messages += len(sh['accounts'][key]['messages'])
                 
         notify_timed = now - last_message_notify
         if notify_timed > 60:
-            if new_messages > 0:
-                notifier.osd("%d 条新信息" % new_messages)
-                last_message_notify = now
-                
+            processor.notify()
+            last_message_notify = now                
             
         sh.close()
 # Start daemon.

@@ -1,7 +1,11 @@
 
-import shelve, ConfigParser, os
+import shelve, ConfigParser, os, sys
 from optparse import OptionParser,OptionGroup
 import daemon
+
+BASEPATH = os.path.dirname(sys.argv[0])
+if BASEPATH != '':
+    BASEPATH += '/'
 
 op = OptionParser()
 
@@ -12,7 +16,7 @@ op.add_option("-a","--account",action="store",dest="account",default=False,help=
 (options,args) = op.parse_args()
 
 accountfile = ConfigParser.ConfigParser()
-accountfile.read('configs/accounts.cfg')
+accountfile.read(BASEPATH + 'configs/accounts.cfg')
 
 if options.account == False:
     print "Please specify account name(defined in configs/accounts.cfg) using -a/--account."
