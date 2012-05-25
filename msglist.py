@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from Tkinter import *
-import shelve,os,sys,copy,base64
+import shelve,os,sys,copy,base64,time
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -88,7 +88,8 @@ class message_list(object):
         self.prevbutton.grid(row=2,rowspan=2,column=0,sticky=N+S+W+E)
         
         self.timelabel = Label(self.root)
-        self.timelabel['text'] = '2012-12-21 00:00:00 GMT'
+        self.timelabel['text'] = ''
+        self.timelabel['width'] = 23
         self.timelabel.grid(row=2,column=1)
         
         self.poslabel = Label(self.root)
@@ -113,6 +114,9 @@ class message_list(object):
         self.message.delete(1.0,END)
         self.message.insert(END,message['message'])
         self.message.config(state=DISABLED)
+        timestamp = int(message['timestamp']) - time.timezone
+        timetuple = time.gmtime(timestamp)
+        self.timelabel['text'] = time.strftime('%Y-%m-%d %H:%M:%S GMT',timetuple)
         
     def select_user(self,event):
         self.userlist.post(event.x_root,event.y_root)
