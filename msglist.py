@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from Tkinter import *
-import shelve,os,sys,copy,base64,time
+import shelve,os,sys,copy,base64,time,tkMessageBox
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -10,6 +10,7 @@ if BASEPATH != '':
 class message_list(object):
     message_cache = {}
     pointer = 0
+    readlist = []
     
     def __init__(self):
         self.root = Tk()
@@ -28,18 +29,53 @@ class message_list(object):
         
         self.refresh_message()
         
+        self.root.protocol("WM_DELETE_WINDOW", self.quit)
         self.root.mainloop()
+    def quit(self):
+        global BASEPATH
+        # Will destroy all messages. First, lock up the database.
+        while True:
+            if os.path.isfile(BASEPATH + 'configs/msgdb.lock'):
+                print 'Orichalcum processor: Message database locked, waiting.'
+                time.sleep(0.5)
+            else:
+                dblock = open(BASEPATH + 'configs/msgdb.lock','w+')
+                dblock.close()
+                break
+        # Clear keys.
+        db = shelve.open(BASEPATH + 'configs/msgdb.db',writeback=True)
+        dellist = []
+        for key0 in db:
+            for key1 in db[key0]:
+                if key1 in self.readlist:
+                    dellist.append((key0,key1))
+        for t in dellist:
+            del db[t[0]][t[1]]
+        db.close()
+        # Remove lock
+        if os.path.isfile(BASEPATH + 'configs/msgdb.lock'):
+            os.remove(BASEPATH + 'configs/msgdb.lock')
+        # Kill the dialog
+        self.root.destroy()
     def refresh_message(self,*args):
         global BASEPATH
+        has_message = False
+        
         selected = self.userlist_var.get()
+        
         db = shelve.open(BASEPATH + 'configs/msgdb.db')
         self.userlist['menu'].delete(0,END)
         self.message_cache = {}
         for key in db:
-            keyname = base64.decodestring(key).strip()
-            self.message_cache[keyname] = db[key]
-            self.userlist['menu'].add_command(label=keyname,command=lambda v=self.userlist_var,l=keyname:v.set(l))
-            
+            if len(db[key]) > 0:
+                has_message = True
+                keyname = base64.decodestring(key).strip()
+                self.message_cache[keyname] = db[key]
+                self.userlist['menu'].add_command(label=keyname,command=lambda v=self.userlist_var,l=keyname:v.set(l))
+        if not has_message:# Database is empty
+            tkMessageBox.showwarning("Orichalcum","没有找到新消息，即将退出。")
+            exit()
+        
         new_display_key = ''
         if self.message_cache.has_key(selected):
             new_display_key = selected
@@ -53,7 +89,11 @@ class message_list(object):
         self.protect_pointer()
         if self.message_cache.has_key(self.selected):
             self.poslabel['text'] = '(%d/%d)' % (self.pointer + 1, len(self.message_cache[self.selected]))
-            self.set_message(self.message_cache[self.selected][self.pointer])
+            self.set_message(self.message_cache[self.selected].items()[self.pointer][1])     # pass to displaying function.
+            
+            newreadid = self.message_cache[self.selected].items()[self.pointer][0]
+            if not newreadid in self.readlist:
+                self.readlist.append(newreadid) # Record the IDs of what we have read.
     def protect_pointer(self):
         if self.pointer < 0:
             self.pointer = 0
@@ -71,7 +111,7 @@ class message_list(object):
         self.label1.grid(row=0,column=0)
         # Create Sender Selecting Menu
         self.userlist_var = StringVar(self.root)
-        self.userlist_opts= ['user1@babeltower','user2@babeltower']
+        self.userlist_opts= ['----']
         self.userlist_var.set(self.userlist_opts[0])
         self.userlist = OptionMenu(self.root,self.userlist_var,*self.userlist_opts)
         
@@ -102,9 +142,10 @@ class message_list(object):
         self.nextbutton.grid(row=2,rowspan=2,column=2,sticky=N+S+W+E)
         # Create Emergency Exit button
         self.exitbutton = Button(self.root)
-        self.exitbutton['text'] = '关闭窗口'
+        self.exitbutton['text'] = '关闭窗口（销毁已读信息）'
         self.exitbutton['bg'] = 'Red'
         self.exitbutton['fg'] = 'White'
+        self.exitbutton['command'] = self.quit
         self.exitbutton.grid(row=4,column=0,columnspan=3,sticky=N+S+W+E)
         
         # Update the window.
