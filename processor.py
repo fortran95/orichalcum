@@ -1,14 +1,29 @@
 # -*- coding: utf-8 -*-
-import notifier,shelve,base64,sys,os,time,hashlib
+import notifier,shelve,base64,sys,os,time,hashlib,json
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
     BASEPATH += '/'
-
+def parse(message):
+    # If this is a marked message(with tags. only tag='im' will be shown, others will be transfered to related programs.
+    tag=''
+    try:
+        j = json.loads(message)
+        tag = j['tag']
+        message = j['message']
+    except:
+        tag = 'im'
+    return {'tag':tag,'message':message}
 def handle(message):
     global BASEPATH
     try:
         print message['message']
+        guidance = parse(message['message'])
+        if guidance['tag'] != 'im':
+            # Call related programs here !
+            return True
+        else:
+            message['message'] = guidance['message']
         # Store message
         #notifier.showMessage(message['sender'],message['message'])
         while True:

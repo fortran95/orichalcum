@@ -1,5 +1,5 @@
 
-import shelve, ConfigParser, os, sys
+import shelve, ConfigParser, os, sys, json
 from optparse import OptionParser,OptionGroup
 import daemon
 
@@ -12,6 +12,7 @@ op = OptionParser()
 op.add_option("-i","--input",action="store",dest="input",default=False,help="Set the input file to be handled.")
 op.add_option("-r","--receiver",action="store",dest="receiver",default=False,help="Specify the receiver.")
 op.add_option("-a","--account",action="store",dest="account",default=False,help="Specify which account to be used.")
+op.add_option("-t","--tag",action="store",dest="tag",default="im",help="Change message tag(default: im).")
 
 (options,args) = op.parse_args()
 
@@ -50,5 +51,8 @@ else:
         exit()
         
 print "-------- Will now push the message --------"
+
+# Pack message.
+message = json.dumps({'tag':options.tag,'message':message})
 
 print daemon.push_message(host,user,secret,options.receiver,message,bits)
