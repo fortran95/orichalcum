@@ -29,6 +29,7 @@ def handle(message):
         else:
             db[newkey][newhash] = newpiece
         db.close()
+        notifier.gnotify('来自 %s 的消息' % message['sender'], message['message'])
     except Exception,e:
         print "Error saving message: %s" % e
     # Remove database lock

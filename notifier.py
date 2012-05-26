@@ -22,14 +22,12 @@ def osd_write(message,timed=450.0):
     ps.stdin.write("""<message id='test' hide_timeout='%d' osd_vposition='top' osd_halignment='center'>\n\n<span foreground='#FF0000'>%s</span></message>""" % (timed,message))
     ps.communicate()
     time.sleep((timed + 150) / 1000)
-def gnotify(message,desc,callback):
+def gnotify(message,desc):
     global BASEPATH
     ns = subprocess.Popen(['mpg123','-q',BASEPATH + 'alarms/caution.mp3'])
     pynotify.init("Orichalcum")
     n = pynotify.Notification(message,desc)
     n.set_urgency(pynotify.URGENCY_NORMAL)
-    #if callback != None:
-        #n.add_action("clicked","Button text", callback, None)
     n.set_timeout(15)
     n.show()
     time.sleep(1)

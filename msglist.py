@@ -73,6 +73,7 @@ class message_list(object):
                 self.message_cache[keyname] = db[key]
                 self.userlist['menu'].add_command(label=keyname,command=lambda v=self.userlist_var,l=keyname:v.set(l))
         if not has_message:# Database is empty
+            self.root.withdraw()
             tkMessageBox.showwarning("Orichalcum","没有找到新消息，即将退出。")
             exit()
         
