@@ -3,12 +3,18 @@
 # This is used to check and pull messages from given server.
 
 import ConfigParser, sys, os, pycurl, StringIO, urllib, json, shelve, hashlib, hmac, time
-import hashcash,notifier,processor
+import hashcash,notifier,processor,aes
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
     BASEPATH += '/'
-
+def find_jsonstr(retrived):
+    ret_begin = retrived.find('{')
+    ret_end = retrived.find('}')
+    if not (ret_end > ret_begin and ret_begin >= 0):
+        return False
+    else:
+        return retrived[ret_begin:ret_end + 1]
 def victoria_decrypt(inputstr,key):
     output = ''
     keylen = len(key)
@@ -52,6 +58,9 @@ def check_messages_list(server,username,secret,bits=22):
     if c.getinfo(pycurl.HTTP_CODE)==200:
         retrived = html.getvalue()
         try:
+            retrived = find_jsonstr(retrived)
+            if retrived == False:
+                return False
             j = json.loads(retrived)
             seed = j['seed'].strip()
             deckey = hmac.HMAC(secret,seed,hashlib.sha1).hexdigest()
@@ -64,7 +73,7 @@ def check_messages_list(server,username,secret,bits=22):
         return codes
     else:
         return False
-def pull_message(server,user,messageid,bits=22):
+def pull_message(server,user,secret,messageid,bits=22):
     hc = hashcash.hashcash(user,messageid,bits)
     
     html = StringIO.StringIO()
@@ -80,8 +89,23 @@ def pull_message(server,user,messageid,bits=22):
     
     if c.getinfo(pycurl.HTTP_CODE)==200:
         retrived = html.getvalue()
+        #print retrived
+        retrived = find_jsonstr(retrived)
+        if retrived == False:
+            return False
         try:
             j = json.loads(retrived)
+            # figure out the decrypt key.
+            decrypt_key = hmac.HMAC(secret,j['keyseed'].strip(),hashlib.sha1).hexdigest()
+            # do HMAC check
+            wanted_hmac = hmac.HMAC(decrypt_key,j['message'],hashlib.sha1).hexdigest()
+            #print "deckey: %s" % decrypt_key
+            #print "hmac:   %s" % wanted_hmac
+            if wanted_hmac.strip().lower() == j['hmac'].strip().lower():
+                j['message'] = aes.decrypt(j['message'],decrypt_key,128)
+            else:
+                return False
+            
         except:
             return False
         return j
@@ -94,7 +118,12 @@ def push_message(server,sender,secret,receiver,message,bits=22):
     
     html = StringIO.StringIO()
     url = "http://%s/push.php" % server
-    post = {'hashcash':hc,'message':message,'auth':auth}
+    
+    # encrypt message using SECRET
+    message_encrypted = aes.encrypt(message,secret,128)
+    message_hmac = hmac.HMAC(secret,message_encrypted,hashlib.sha1).hexdigest()
+    
+    post = {'hashcash':hc,'message':message_encrypted,'auth':auth,'hmac':message_hmac}
     
     c = pycurl.Curl()
     c.setopt(pycurl.URL,url)
@@ -162,7 +191,7 @@ if __name__ == '__main__':
                 
                 for pullcode in sh['accounts'][key]['codes']:
                     print "Pulling message ID = %s ..." % pullcode
-                    pm = pull_message(accounts[key]['host'],accounts[key]['user'],pullcode,accounts[key]['bits'])
+                    pm = pull_message(accounts[key]['host'],accounts[key]['user'],accounts[key]['secret'],pullcode,accounts[key]['bits'])
                     if pm != False:
                         print "(Message retrived successfully.)"
                         processor.handle(pm)
