@@ -62,6 +62,8 @@ def inputbox(receiver,account):
     
     root.mainloop()
     
+    root.destroy()
+    
     return usertext
 
 if __name__ == "__main__":
