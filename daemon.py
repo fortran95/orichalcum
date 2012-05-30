@@ -2,8 +2,9 @@
 
 # This is used to check and pull messages from given server.
 
-import ConfigParser, sys, os, pycurl, StringIO, urllib, json, shelve, hashlib, hmac, time
+import ConfigParser, sys, os, pycurl, StringIO, urllib, json, shelve, hashlib, hmac, time, tkMessageBox
 import hashcash,notifier,processor,aes
+from Tkinter import *
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -210,8 +211,24 @@ if __name__ == '__main__':
             
         sh.close()
 # Start daemon.
+    if os.path.isfile(BASEPATH + 'daemonized.lock'):
+        # Declare an error
+        print "Error: Daemon already running."
+        root = Tk()
+        root.withdraw()
+        if tkMessageBox.askyesno("Orichalcum", "检测到锁文件，认为 Orichalcum 后台服务可能已经启动，因此本次进程将不会启动。您可以清除锁文件然后重试，但这将导致正在运行的服务进程（如果有的话）退出。删除吗？"):
+            os.remove(BASEPATH + 'daemonized.lock')
+            print "daemonized.lock REMOVED."
+        exit()
+    f = open('daemonized.lock','w+')
+    f.close()
     while True:
+        if not os.path.isfile(BASEPATH + 'daemonized.lock'):
+            print "Exit the program."
+            exit()
+        
         print ' ' * 10 + "Time to check my job."
+        
         job()
         print ' ' * 10 + "My job finished."
         time.sleep(10)
