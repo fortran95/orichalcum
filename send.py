@@ -1,7 +1,7 @@
 
 import shelve, ConfigParser, os, sys, json
 from optparse import OptionParser,OptionGroup
-import daemon
+import daemon,windows
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -36,9 +36,11 @@ bits = accountfile.get(options.account,'bits')
 
 # Read file to get message
 if options.input == False:
-    print "Please input your message:"
     try:
-        message = raw_input()
+        message = windows.inputbox(options.receiver,options.account)
+        if message == False:
+            print "User cancelled."
+            exit()
     except Exception,e:
         pass
 else:
