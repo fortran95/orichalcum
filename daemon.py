@@ -220,7 +220,7 @@ if __name__ == '__main__':
             os.remove(BASEPATH + 'daemonized.lock')
             print "daemonized.lock REMOVED."
         exit()
-    f = open('daemonized.lock','w+')
+    f = open(BASEPATH + 'daemonized.lock','w+')
     f.close()
     while True:
         if not os.path.isfile(BASEPATH + 'daemonized.lock'):
