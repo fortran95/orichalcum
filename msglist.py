@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from Tkinter import *
-import shelve,os,sys,copy,base64,time,tkMessageBox,subprocess
+import shelve,os,sys,copy,base64,time,tkMessageBox,subprocess,tkFileDialog
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -105,7 +105,28 @@ class message_list(object):
             receiver= self.selected
             #print "command: python send.py -r %s -a %s" % (receiver,accname)
             subprocess.Popen(['python',BASEPATH + 'send.py','-r',receiver,'-a',accname])
+    def save_message(self):
+        self.selected = self.userlist_var.get()
+        self.protect_pointer()
+        if self.message_cache.has_key(self.selected):
+            curmsg = self.message_cache[self.selected].items()[self.pointer][1]
+            accname = curmsg['account']
+            receiver= self.selected
+            message = curmsg['message']
+            msgtime = curmsg['timestamp']
+            content = "Orichalcum Message\n\nAccount: %s\nFrom: %s\nTimeStamp: %s\n\n%s" % (accname,receiver,msgtime,message)
             
+            myFormats = [('Plain Text Format(*.txt)','*.txt')]
+            defname = "%s-%s-%s" % (accname,receiver,msgtime)
+            fileName = tkFileDialog.asksaveasfilename(parent=self.root,filetypes=myFormats ,title="Save message", initialfile=defname)
+            if len(fileName) > 0:
+                #print "Now saving under %s" % fileName
+                try:
+                    f = open(fileName,'w+')
+                    f.write(content)
+                    f.close()
+                except Exception,e:
+                    print e
     def protect_pointer(self):
         if self.pointer < 0:
             self.pointer = 0
@@ -155,6 +176,8 @@ class message_list(object):
         # Create Save Button
         self.savebutton = Button(self.root)
         self.savebutton['text'] = '保存消息'
+        self.savebutton['fg'],self.savebutton['bg'] = ('White','Blue')
+        self.savebutton['command'] = self.save_message
         self.savebutton.grid(row=4,column=0,sticky=N+S+W+E)
         # Create Reply Button
         self.replybutton = Button(self.root)
