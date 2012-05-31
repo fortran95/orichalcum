@@ -14,7 +14,7 @@ def parse(message):
     except:
         tag = 'im'
     return {'tag':tag,'message':message}
-def handle(message):
+def handle(message,accountkey):
     global BASEPATH
     try:
         print message['message']
@@ -36,7 +36,7 @@ def handle(message):
                 break
         
         db = shelve.open(BASEPATH + 'configs/msgdb.db',writeback=True)
-        newpiece = {'message':message['message'],'timestamp':message['timestamp']}
+        newpiece = {'message':message['message'],'timestamp':message['timestamp'],'account':accountkey}
         newhash = base64.encodestring(hashlib.md5(message['message'] + message['timestamp']).digest()).strip()
         newkey = base64.encodestring(message['sender'])
         if db.has_key(newkey) == False:

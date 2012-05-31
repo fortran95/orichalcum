@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from Tkinter import *
-import shelve,os,sys,copy,base64,time,tkMessageBox
+import shelve,os,sys,copy,base64,time,tkMessageBox,subprocess
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -95,6 +95,17 @@ class message_list(object):
             newreadid = self.message_cache[self.selected].items()[self.pointer][0]
             if not newreadid in self.readlist:
                 self.readlist.append(newreadid) # Record the IDs of what we have read.
+    def open_reply_window(self):
+        global BASEPATH
+        self.selected = self.userlist_var.get()
+        self.protect_pointer()
+        if self.message_cache.has_key(self.selected):
+            curmsg = self.message_cache[self.selected].items()[self.pointer][1]
+            accname = curmsg['account']
+            receiver= self.selected
+            #print "command: python send.py -r %s -a %s" % (receiver,accname)
+            subprocess.Popen(['python',BASEPATH + 'send.py','-r',receiver,'-a',accname])
+            
     def protect_pointer(self):
         if self.pointer < 0:
             self.pointer = 0
@@ -141,13 +152,24 @@ class message_list(object):
         self.nextbutton['text'] = '下一条'
         self.nextbutton['command'] = lambda v=1: self.pointer_shift(v)
         self.nextbutton.grid(row=2,rowspan=2,column=2,sticky=N+S+W+E)
+        # Create Save Button
+        self.savebutton = Button(self.root)
+        self.savebutton['text'] = '保存消息'
+        self.savebutton.grid(row=4,column=0,sticky=N+S+W+E)
+        # Create Reply Button
+        self.replybutton = Button(self.root)
+        self.replybutton['text'] = '回复'
+        self.replybutton['bg'] = '#0A0'
+        self.replybutton['fg'] = 'White'
+        self.replybutton['command'] = self.open_reply_window
+        self.replybutton.grid(row=4,column=1,columnspan=2,sticky=N+S+W+E)
         # Create Emergency Exit button
         self.exitbutton = Button(self.root)
         self.exitbutton['text'] = '关闭窗口（销毁已读信息）'
         self.exitbutton['bg'] = 'Red'
         self.exitbutton['fg'] = 'White'
         self.exitbutton['command'] = self.quit
-        self.exitbutton.grid(row=4,column=0,columnspan=3,sticky=N+S+W+E)
+        self.exitbutton.grid(row=5,column=0,columnspan=3,sticky=N+S+W+E)
         
         # Update the window.
         self.root.update_idletasks()
