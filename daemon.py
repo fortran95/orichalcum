@@ -211,21 +211,49 @@ if __name__ == '__main__':
             
         sh.close()
 # Start daemon.
-    if os.path.isfile(BASEPATH + 'daemonized.lock'):
-        # Declare an error
-        print "Error: Daemon already running."
-        root = Tk()
-        root.withdraw()
-        if tkMessageBox.askyesno("Orichalcum", "检测到锁文件，认为 Orichalcum 后台服务可能已经启动，因此本次进程将不会启动。您可以清除锁文件然后重试，但这将导致正在运行的服务进程（如果有的话）退出。删除吗？"):
-            os.remove(BASEPATH + 'daemonized.lock')
-            print "daemonized.lock REMOVED."
-        exit()
-    f = open(BASEPATH + 'daemonized.lock','w+')
+    LOCKFILE = BASEPATH + 'daemonized.lock'
+    if os.path.isfile(LOCKFILE):
+        # See if previous daemon is running.
+        f = open(LOCKFILE,'r')
+        filec = f.read().strip('\x00')
+        print filec
+        f.close()
+        try:
+            if time.time() - int(filec,10) > 30:
+                print "Found lock file and assumed to be dead. Will delete it."
+                os.remove(LOCKFILE)
+                print "Lock file deleted, wait 20 seconds for other daemon's end."
+                time.sleep(20)
+                if os.path.isfile(LOCKFILE):
+                    exit()
+            else:
+                # Declare an error
+                print "Error: Daemon already running."
+                root = Tk()
+                root.withdraw()
+                if tkMessageBox.askyesno("Orichalcum", "检测到锁文件，认为 Orichalcum 后台服务可能已经启动，因此本次进程将不会启动。您可以清除锁文件然后重试，但这将导致正在运行的服务进程（如果有的话）退出。删除吗？"):
+                    os.remove(LOCKFILE)
+                    print "daemonized.lock REMOVED. Wait for other daemon's end."
+                    time.sleep(20)
+                    if os.path.isfile(LOCKFILE):
+                        exit()
+                else:
+                    exit()
+        except Exception,e:
+            print "Error starting daemon:"
+            print e
+            exit()
+    f = open(LOCKFILE,'w+')
     f.close()
     while True:
-        if not os.path.isfile(BASEPATH + 'daemonized.lock'):
+        if not os.path.isfile(LOCKFILE):
             print "Exit the program."
             exit()
+        else:
+            f = open(LOCKFILE,'w')
+            f.truncate(20)
+            f.write(str(int(time.time())))
+            f.close()
         
         print ' ' * 10 + "Time to check my job."
         
