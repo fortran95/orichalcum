@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import notifier,shelve,base64,sys,os,time,hashlib,json
+import plugins
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -21,6 +22,7 @@ def handle(message,accountkey):
         guidance = parse(message['message'])
         if guidance['tag'] != 'im':
             # Call related programs here !
+            plugins.plugin_do(guidance)
             return True
         else:
             message['message'] = guidance['message']
