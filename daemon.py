@@ -114,11 +114,12 @@ def pull_message(server,user,secret,messageid,bits=22):
         return False
 def push_message(server,sender,secret,receiver,message,bits=22):
     hc = hashcash.hashcash(sender,receiver,bits).strip()
-    
+    secret = str(secret)
+
     auth = hmac.HMAC(secret,hashlib.sha1(hc).hexdigest().lower(),hashlib.sha512).hexdigest().lower()
-    
+
     html = StringIO.StringIO()
-    url = "http://%s/push.php" % server
+    url = str("http://%s/push.php" % server)
     
     # encrypt message using SECRET
     message_encrypted = aes.encrypt(message,secret,128)
