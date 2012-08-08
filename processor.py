@@ -21,16 +21,18 @@ def handle(message,accountkey,receiver):
         print message['message']
 
         # put message['message'] to Xi
-        tag = json.dumps({'timestamp':message['timestamp']}).encode('hex')
+        tag = json.dumps({'timestamp':message['timestamp'],'account':accountkey}).encode('hex')
 
         if xisupport.XI_ENABLED:    
-            xi_queue(message['sender'],receiver,tag,message['message'],False)
+            xisupport.xi_queue(message['sender'],receiver,tag,message['message'],False)
             # Retrive Xi handled messages and parse that.
             handled = xisupport.xi_handled(False)
             for i in handled:
                 handle_kernel(i[0],i[1],i[2],i[3]) # SENDER RECEIVER TAG BODY
         else:
             handle_kernel(message['sender'],receiver,tag,message['message'])
+    except Exception,e:
+        print "Error handling message: %s" % e
 
 def handle_kernel(sender,receiver,tag,message):
     global BASEPATH
@@ -57,7 +59,7 @@ def handle_kernel(sender,receiver,tag,message):
                 break
         
         db = shelve.open(MSGDB_PATH0 + 'db' , writeback=True)
-        newpiece = {'message':message,'timestamp':tag['timestamp'],'account':accountkey}
+        newpiece = {'message':message,'timestamp':tag['timestamp'],'account':tag['accountkey']}
         newhash = base64.encodestring(hashlib.md5(message + tag['timestamp']).digest()).strip()
         newkey = base64.encodestring(sender)
         if db.has_key(newkey) == False:
