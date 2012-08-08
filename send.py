@@ -1,7 +1,7 @@
 
 import shelve, ConfigParser, os, sys, json
 from optparse import OptionParser,OptionGroup
-import daemon,windows
+import daemon,windows,xisupport
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -17,7 +17,7 @@ op.add_option("-t","--tag",action="store",dest="tag",default="im",help="Change m
 (options,args) = op.parse_args()
 
 accountfile = ConfigParser.ConfigParser()
-accountfile.read(BASEPATH + 'configs/accounts.cfg')
+accountfile.read(os.path.join(BASEPATH,'configs','accounts.cfg'))
 
 if options.account == False:
     print "Please specify account name(defined in configs/accounts.cfg) using -a/--account."
@@ -57,4 +57,26 @@ print "-------- Will now push the message --------"
 # Pack message.
 message = json.dumps({'tag':options.tag,'message':message})
 
-print daemon.push_message(host,user,secret,options.receiver,message,bits)
+# TODO add xi.postoffice support here.
+if xisupport.XI_ENABLED:
+    tag = json.dumps({'host':host,'secret':secret,'bits':bits}).encode('hex')
+    xisupport.xi_queue(user,options.receiver,tag,message)
+
+    handleds = xisupport.xi_handled(True)
+    for p in handleds:
+        try:
+            tag      = json.loads(p.attributes['TAG'].decode('hex'))
+
+            host     = tag['host']
+            user     = p.attributes['SENDER']
+            secret   = tag['secret']
+            receiver = p.attributes['RECEIVER']
+            message  = p.body
+            bits     = tag['bits']
+
+            daemon.push_message(host,user,secret,receiver,message,bits)
+        except Exception,e:
+            print "Failed a letter: %s" % e
+            continue
+else:
+    print daemon.push_message(host,user,secret,options.receiver,message,bits)

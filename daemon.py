@@ -195,6 +195,7 @@ if __name__ == '__main__':
                     pm = pull_message(accounts[key]['host'],accounts[key]['user'],accounts[key]['secret'],pullcode,accounts[key]['bits'])
                     if pm != False:
                         print "(Message retrived successfully.)"
+                        # TODO insert postoffice support
                         processor.handle(pm,key)
                     else:
                         print "(Error in retriving message.)"
