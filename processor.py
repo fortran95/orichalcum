@@ -18,7 +18,7 @@ def parse(message):
 def handle(message,accountkey,receiver):
     global BASEPATH
     try:
-        print message['message']
+#       print message['message']
 
         # put message['message'] to Xi
         tag = json.dumps({'timestamp':message['timestamp'],'account':accountkey}).encode('hex')
