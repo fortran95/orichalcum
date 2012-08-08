@@ -58,7 +58,7 @@ if not options.omit:
     # Pack message.
     message = json.dumps({'tag':options.tag,'message':message})
 
-# TODO add xi.postoffice support here.
+# xi.postoffice support here.
 if xisupport.XI_ENABLED:
 
     if not options.omit:
@@ -84,4 +84,4 @@ if xisupport.XI_ENABLED:
             print "Failed a letter: %s" % e
             continue
 elif not options.omit:
-        print daemon.push_message(host,user,secret,options.receiver,message,bits)
+    print daemon.push_message(host,user,secret,options.receiver,message,bits)
