@@ -2,9 +2,8 @@
 import notifier,shelve,base64,sys,os,time,hashlib,json
 import plugins,xisupport
 
-BASEPATH = os.path.dirname(sys.argv[0])
-if BASEPATH != '':
-    BASEPATH += '/'
+BASEPATH = os.path.realpath(os.path.dirname(sys.argv[0]))
+
 def parse(message):
     # If this is a marked message(with tags. only tag='im' will be shown, others will be transfered to related programs.
     tag=''
@@ -16,7 +15,6 @@ def parse(message):
         tag = 'im'
     return {'tag':tag,'message':message}
 def handle(message,accountkey,receiver):
-    global BASEPATH
     try:
 #       print message['message']
 
@@ -78,7 +76,7 @@ def handle_kernel(sender,receiver,tag,message):
 def notify():
     global BASEPATH
     count = 0
-    db = shelve.open(BASEPATH + 'configs/msgdb.db')
+    db = shelve.open(os.path.join(BASEPATH,'configs','msgdb.db'))
     for key in db:
         count += len(db[key])
     if count>0:
