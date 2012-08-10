@@ -4,16 +4,18 @@ import plugins,xisupport
 
 BASEPATH = os.path.realpath(os.path.dirname(sys.argv[0]))
 
-def parse(message):
+def parse(message,moretags,sender):
     # If this is a marked message(with tags. only tag='im' will be shown, others will be transfered to related programs.
     tag=''
     try:
         j = json.loads(message)
         tag = j['tag']
         message = j['message']
+        moretags = json.loads(moretags.decode('hex'))
+        moretags['sender'] = sender
     except:
         tag = 'im'
-    return {'tag':tag,'message':message}
+    return {'tag':tag,'message':message,'more':moretags}
 def handle(message,accountkey,receiver):
     try:
 #       print message['message']
@@ -36,8 +38,8 @@ def handle_kernel(sender,receiver,tag,message):
     global BASEPATH
     MSGDB_PATH0 = os.path.join(BASEPATH,'configs','msgdb.')
     try:
-        guidance = parse(message)
-        tag = json.loads(tag.decode('hex'))
+        guidance = parse(message,tag,sender)    # Mix rubbish up. Poor design.
+        tag = guidance['more']
 
         if guidance['tag'] != 'im':
             # Call related programs here !
