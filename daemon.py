@@ -3,7 +3,7 @@
 # This is used to check and pull messages from given server.
 
 import ConfigParser, sys, os, pycurl, StringIO, urllib, json, shelve, hashlib, hmac, time, tkMessageBox
-import hashcash,notifier,processor,aes
+import hashcash,notifier,processor,aes,curlhttp
 from Tkinter import *
 
 BASEPATH = os.path.dirname(sys.argv[0])
@@ -40,28 +40,13 @@ def check_messages_list(server,username,secret,bits=22):
     hc_sha1 = hashlib.sha1(hc).hexdigest().lower()
     auth = hmac.HMAC(secret,hc_sha1,hashlib.sha512).hexdigest().lower()
     
-    html = StringIO.StringIO()
     url = "https://%s/pull.php" % server
-    post = urllib.urlencode({'hashcash':hc,'auth':auth})
-    
-    try:
-        c = pycurl.Curl()
-        c.setopt(pycurl.URL,url)
-        c.setopt(pycurl.SSL_VERIFYHOST, False)
-        c.setopt(pycurl.SSL_VERIFYPEER,False)
-        c.setopt(pycurl.WRITEFUNCTION, html.write)
-        c.setopt(pycurl.FOLLOWLOCATION, 1)
-        c.setopt(pycurl.POSTFIELDS, post)
-        c.perform()
-    except Exception,e:
-        print "Orichalcum Daemon Error, Cannot Connect To Server."
-        return False
-    if c.getinfo(pycurl.HTTP_CODE)==200:
-        retrived = html.getvalue()
+    post = {'hashcash':hc,'auth':auth}
+    retrived = curlhttp.http(url,post)
+
+    if retrived != '' and retrived != False:
         try:
             retrived = find_jsonstr(retrived)
-            if retrived == False:
-                return False
             j = json.loads(retrived)
             seed = j['seed'].strip()
             deckey = hmac.HMAC(secret,seed,hashlib.sha1).hexdigest()
@@ -77,22 +62,11 @@ def check_messages_list(server,username,secret,bits=22):
 def pull_message(server,user,secret,messageid,bits=22):
     hc = hashcash.hashcash(user,messageid,bits)
     
-    html = StringIO.StringIO()
     url = "https://%s/pull.php" % server
-    post = urllib.urlencode({'hashcash':hc,'auth':''})
+    post = {'hashcash':hc,'auth':''}
+    retrived = curlhttp.http(url,post)
     
-    c = pycurl.Curl()
-    c.setopt(pycurl.URL,url)
-    c.setopt(pycurl.WRITEFUNCTION, html.write)
-    c.setopt(pycurl.SSL_VERIFYHOST, False)
-    c.setopt(pycurl.SSL_VERIFYPEER,False)
-    c.setopt(pycurl.FOLLOWLOCATION, 1)
-    c.setopt(pycurl.POSTFIELDS, post)
-    c.perform()
-    
-    if c.getinfo(pycurl.HTTP_CODE)==200:
-        retrived = html.getvalue()
-        #print retrived
+    if retrived != '' and retrived != False:
         retrived = find_jsonstr(retrived)
         if retrived == False:
             return False
@@ -127,35 +101,16 @@ def push_message(server,sender,secret,receiver,message,bits=22):
     message_encrypted = aes.encrypt(message,secret,128)
     message_hmac = hmac.HMAC(secret,message_encrypted,hashlib.sha1).hexdigest()
     
-    post = urllib.urlencode({'hashcash':hc,'message':message_encrypted,'auth':auth,'hmac':message_hmac})
+    post = {'hashcash':hc,'message':message_encrypted,'auth':auth,'hmac':message_hmac}
 #    print urllib.urlencode(post)
 #    exit()
-    
-    try:
-        c = pycurl.Curl()
-        c.setopt(pycurl.URL,url)
-        c.setopt(pycurl.WRITEFUNCTION, html.write)
-        c.setopt(pycurl.FOLLOWLOCATION, 1)
+    retrived = curlhttp.http(url,post)
 
-        c.setopt(pycurl.SSL_VERIFYHOST, 0)
-        c.setopt(pycurl.SSL_VERIFYPEER, 0)
-        
-        c.setopt(pycurl.POSTFIELDS, post)
-        c.perform()
-    
-        if c.getinfo(pycurl.HTTP_CODE)==200:
-            retrived = html.getvalue()
-            return retrived
-        else:
-            return False
-    except:
-        print "Failed regular method, using UNIX shell to push message instead."
-        try:
-            x = os.popen('curl --data "%s" %s' % (post,url))
-            return x.read()
-        except:
-            pass
+    if retrived == '':
         return False
+
+    return retrived
+    
 if __name__ == '__main__':
     
     accounts = {}
