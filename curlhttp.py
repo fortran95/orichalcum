@@ -9,7 +9,7 @@ except:
 
 def http(url,post):
     html = StringIO.StringIO()
-    if type(post) == dict:
+    if type(post) != str:
         post = urllib.urlencode(post)
 
     try:

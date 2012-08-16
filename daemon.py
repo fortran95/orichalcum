@@ -47,6 +47,8 @@ def check_messages_list(server,username,secret,bits=22):
     if retrived != '' and retrived != False:
         try:
             retrived = find_jsonstr(retrived)
+            if retrived == False:
+                return False
             j = json.loads(retrived)
             seed = j['seed'].strip()
             deckey = hmac.HMAC(secret,seed,hashlib.sha1).hexdigest()
@@ -54,7 +56,7 @@ def check_messages_list(server,username,secret,bits=22):
             for c in j['codes']:
                 codes.append(victoria_decrypt(c,deckey))
         except Exception,e:
-            print "Error: %s" % retrived
+            print "Error: %s" % e
             return False
         return codes
     else:
