@@ -41,8 +41,8 @@ def check_messages_list(server,username,secret,bits=22):
     auth = hmac.HMAC(secret,hc_sha1,hashlib.sha512).hexdigest().lower()
     
     html = StringIO.StringIO()
-    url = "http://%s/pull.php" % server
-    post = {'hashcash':hc,'auth':auth}
+    url = "https://%s/pull.php" % server
+    post = urllib.urlencode({'hashcash':hc,'auth':auth})
     
     try:
         c = pycurl.Curl()
@@ -51,7 +51,7 @@ def check_messages_list(server,username,secret,bits=22):
         c.setopt(pycurl.SSL_VERIFYPEER,False)
         c.setopt(pycurl.WRITEFUNCTION, html.write)
         c.setopt(pycurl.FOLLOWLOCATION, 1)
-        c.setopt(pycurl.POSTFIELDS, urllib.urlencode(post))
+        c.setopt(pycurl.POSTFIELDS, post)
         c.perform()
     except Exception,e:
         print "Orichalcum Daemon Error, Cannot Connect To Server."
@@ -78,14 +78,16 @@ def pull_message(server,user,secret,messageid,bits=22):
     hc = hashcash.hashcash(user,messageid,bits)
     
     html = StringIO.StringIO()
-    url = "http://%s/pull.php" % server
-    post = {'hashcash':hc,'auth':''}
+    url = "https://%s/pull.php" % server
+    post = urllib.urlencode({'hashcash':hc,'auth':''})
     
     c = pycurl.Curl()
     c.setopt(pycurl.URL,url)
     c.setopt(pycurl.WRITEFUNCTION, html.write)
+    c.setopt(pycurl.SSL_VERIFYHOST, False)
+    c.setopt(pycurl.SSL_VERIFYPEER,False)
     c.setopt(pycurl.FOLLOWLOCATION, 1)
-    c.setopt(pycurl.POSTFIELDS, urllib.urlencode(post))
+    c.setopt(pycurl.POSTFIELDS, post)
     c.perform()
     
     if c.getinfo(pycurl.HTTP_CODE)==200:
@@ -119,25 +121,40 @@ def push_message(server,sender,secret,receiver,message,bits=22):
     auth = hmac.HMAC(secret,hashlib.sha1(hc).hexdigest().lower(),hashlib.sha512).hexdigest().lower()
 
     html = StringIO.StringIO()
-    url = str("http://%s/push.php" % server)
+    url = str("https://%s/push.php" % server)
     
     # encrypt message using SECRET
     message_encrypted = aes.encrypt(message,secret,128)
     message_hmac = hmac.HMAC(secret,message_encrypted,hashlib.sha1).hexdigest()
     
-    post = {'hashcash':hc,'message':message_encrypted,'auth':auth,'hmac':message_hmac}
+    post = urllib.urlencode({'hashcash':hc,'message':message_encrypted,'auth':auth,'hmac':message_hmac})
+#    print urllib.urlencode(post)
+#    exit()
     
-    c = pycurl.Curl()
-    c.setopt(pycurl.URL,url)
-    c.setopt(pycurl.WRITEFUNCTION, html.write)
-    c.setopt(pycurl.FOLLOWLOCATION, 1)
-    c.setopt(pycurl.POSTFIELDS, urllib.urlencode(post))
-    c.perform()
+    try:
+        c = pycurl.Curl()
+        c.setopt(pycurl.URL,url)
+        c.setopt(pycurl.WRITEFUNCTION, html.write)
+        c.setopt(pycurl.FOLLOWLOCATION, 1)
+
+        c.setopt(pycurl.SSL_VERIFYHOST, 0)
+        c.setopt(pycurl.SSL_VERIFYPEER, 0)
+        
+        c.setopt(pycurl.POSTFIELDS, post)
+        c.perform()
     
-    if c.getinfo(pycurl.HTTP_CODE)==200:
-        retrived = html.getvalue()
-        return retrived
-    else:
+        if c.getinfo(pycurl.HTTP_CODE)==200:
+            retrived = html.getvalue()
+            return retrived
+        else:
+            return False
+    except:
+        print "Failed regular method, using UNIX shell to push message instead."
+        try:
+            x = os.popen('curl --data "%s" %s' % (post,url))
+            return x.read()
+        except:
+            pass
         return False
 if __name__ == '__main__':
     
