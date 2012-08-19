@@ -13,7 +13,8 @@ op.add_option("-i","--input",action="store",dest="input",default=False,help="Set
 op.add_option("-r","--receiver",action="store",dest="receiver",default=False,help="Specify the receiver.")
 op.add_option("-a","--account",action="store",dest="account",default=False,help="Specify which account to be used.")
 op.add_option("-t","--tag",action="store",dest="tag",default="im",help="Change message tag(default: im).")
-op.add_option("-x","--xi",action="store_true",dest="omit",default=False,help="CAUTION: Omit any input, only push Xi generated messages(if any).")
+op.add_option("-x","--xi",action="store_true", dest="usexi", default=False,help="Use xi system to encrypt. OVERRIDES user's decision in inputbox if any!")
+op.add_option("-f","--flush",action="store_true",dest="omit",default=False,help="CAUTION: Omit any input, only push Xi generated messages(if any).")
 
 (options,args) = op.parse_args()
 
@@ -40,7 +41,9 @@ if not options.omit:
     # Read file to get message
     if options.input == False:
         try:
-            message = windows.inputbox(options.receiver,options.account)
+            userinput = windows.inputbox(options.receiver,options.account)
+            message = userinput['text']
+            user_usexi = userinput['xi']
             if message == False:
                 print "User cancelled."
                 exit()
@@ -59,7 +62,7 @@ if not options.omit:
     message = json.dumps({'tag':options.tag,'message':message})
 
 # xi.postoffice support here.
-if xisupport.XI_ENABLED:
+if xisupport.XI_ENABLED and (options.usexi or user_usexi):
 
     if not options.omit:
         tag = json.dumps({'host':host,'secret':secret,'bits':bits}).encode('hex')
@@ -79,7 +82,7 @@ if xisupport.XI_ENABLED:
 
             print "[%s] to [%s] is pushing." % (user,receiver)
 
-            daemon.push_message(host,user,secret,receiver,message,bits)
+            daemon.push_message(host,user,secret,receiver,message,bits) # TODO make this special to easily distinguish with non-Xi processed messages
         except Exception,e:
             print "Failed a letter: %s" % e
             continue

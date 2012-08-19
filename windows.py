@@ -2,8 +2,13 @@
 from Tkinter import *
 
 usertext = ''
+usexi    = False
 class Editor(object):
-    def __init__(self,master,receiver,account):
+    def __init__(self,master,receiver,account,xi):
+        global usertext,usexi
+        usertext = ''
+        usexi    = False
+
         self.label0 = Label(master)
         self.label0['text'] = '收信人'
         self.label0.grid(row=0,column=0)
@@ -14,23 +19,36 @@ class Editor(object):
         
         self.receiver = Label(master)
         self.receiver['text'] = receiver
-        self.receiver.grid(row=0,column=1)
+        self.receiver.grid(row=0,column=1,columnspan=2)
         
         self.account = Label(master)
         self.account['text'] = account
-        self.account.grid(row=1,column=1)
+        self.account.grid(row=1,column=1,columnspan=2)
         
         self.editor = Text(master)
-        self.editor.grid(row=2,column=0,columnspan=2)
+        self.editor.grid(row=2,column=0,columnspan=3)
         
-        def save(m=master):
-            global usertext
+        def save(m=master,u=False):
+            global usertext,usexi
             usertext = self.editor.get(1.0,END)
+            usexi    = u
             m.quit()
+        def save_usexi(m=master):
+            save(m,True)
+
         self.yes = Button(master)
-        self.yes['text'] = '保存并发送'
+        if xi:
+            self.yes['state'] = DISABLED
+            self.yes['text']  = '已选择禁止非密发送'
+        else:
+            self.yes['text'] = '直接发送'
         self.yes['command'] = save
         self.yes.grid(row=3,column=0,sticky=N+E+W+S)
+
+        self.yes_xi = Button(master,bg='#F00',fg='#FFF')
+        self.yes_xi['text'] = '加密并发送'
+        self.yes_xi['command'] = save_usexi
+        self.yes_xi.grid(row=3,column=1,sticky=N+S+W+E)
         
         def cancel(m=master):
             global usertext
@@ -39,16 +57,16 @@ class Editor(object):
         self.no = Button(master)
         self.no['text'] = '取消'
         self.no['command'] = cancel
-        self.no.grid(row=3,column=1,sticky=N+E+W+S)
+        self.no.grid(row=3,column=2,sticky=N+E+W+S)
         
         master.update_idletasks()
         
 
-def inputbox(receiver,account):
-    global usertext
+def inputbox(receiver,account,xi):
+    global usertext,usexi
     root = Tk()
     root.title("给 %s 发送信息" % receiver)
-    app = Editor(root,receiver,account)
+    app = Editor(root,receiver,account,xi)
     
     w = root.winfo_width()
     h = root.winfo_height()
@@ -63,8 +81,12 @@ def inputbox(receiver,account):
     root.mainloop()
     
     root.destroy()
+
+    usertext = usertext.strip()
+    if usertext == '':
+        usertext = False
     
-    return usertext
+    return {'text':usertext,'xi':usexi}
 
 if __name__ == "__main__":
-    print inputbox("receiver","account")
+    print inputbox("receiver","account",True)
