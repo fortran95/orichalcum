@@ -11,7 +11,9 @@ class message_list(object):
     message_cache = {}
     pointer = 0
     readlist = []
-    
+    def _sort_messages(self,inp):
+        s = sorted(inp.iteritems(),key=lambda d:d[1]['timestamp'])
+        return s
     def __init__(self):
         self.root = Tk()
         self.root.title('阅读消息')
@@ -70,7 +72,7 @@ class message_list(object):
             if len(db[key]) > 0:
                 has_message = True
                 keyname = base64.decodestring(key).strip()
-                self.message_cache[keyname] = db[key]
+                self.message_cache[keyname] = self._sort_messages(db[key])
                 self.userlist['menu'].add_command(label=keyname,command=lambda v=self.userlist_var,l=keyname:v.set(l))
         if not has_message:# Database is empty
             self.root.withdraw()
@@ -90,9 +92,9 @@ class message_list(object):
         self.protect_pointer()
         if self.message_cache.has_key(self.selected):
             self.poslabel['text'] = '(%d/%d)' % (self.pointer + 1, len(self.message_cache[self.selected]))
-            self.set_message(self.message_cache[self.selected].items()[self.pointer][1])     # pass to displaying function.
+            self.set_message(self.message_cache[self.selected][self.pointer][1])     # pass to displaying function.
             
-            newreadid = self.message_cache[self.selected].items()[self.pointer][0]
+            newreadid = self.message_cache[self.selected][self.pointer][0]
             if not newreadid in self.readlist:
                 self.readlist.append(newreadid) # Record the IDs of what we have read.
     def open_reply_window(self):
@@ -100,7 +102,7 @@ class message_list(object):
         self.selected = self.userlist_var.get()
         self.protect_pointer()
         if self.message_cache.has_key(self.selected):
-            curmsg = self.message_cache[self.selected].items()[self.pointer][1]
+            curmsg = self.message_cache[self.selected][self.pointer][1]
             accname = curmsg['account']
             receiver= self.selected
             #print "command: python send.py -r %s -a %s" % (receiver,accname)
@@ -109,7 +111,7 @@ class message_list(object):
         self.selected = self.userlist_var.get()
         self.protect_pointer()
         if self.message_cache.has_key(self.selected):
-            curmsg = self.message_cache[self.selected].items()[self.pointer][1]
+            curmsg = self.message_cache[self.selected][self.pointer][1]
             accname = curmsg['account']
             receiver= self.selected
             message = curmsg['message']
