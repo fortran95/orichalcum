@@ -27,13 +27,13 @@ def handle(message,accountkey,receiver):
             # Retrive Xi handled messages and parse that.
             handled = xisupport.xi_handled(False)
             for i in handled:
-                handle_kernel(i[0],i[1],i[2],i[3]) # SENDER RECEIVER TAG BODY
+                handle_kernel(i[0],i[1],i[2],i[3],True) # SENDER RECEIVER TAG BODY
         else:
-            handle_kernel(message['sender'],receiver,tag,coremessage['message'])
+            handle_kernel(message['sender'],receiver,tag,coremessage['message'],False)
     except Exception,e:
         print "Error handling message: %s" % e
 
-def handle_kernel(sender,receiver,tag,message):
+def handle_kernel(sender,receiver,tag,message,isxi):
     global BASEPATH
     MSGDB_PATH0 = os.path.join(BASEPATH,'configs','msgdb.')
     try:
@@ -58,7 +58,7 @@ def handle_kernel(sender,receiver,tag,message):
                 break
         
         db = shelve.open(MSGDB_PATH0 + 'db' , writeback=True)
-        newpiece = {'message':message,'timestamp':tag['timestamp'],'account':tag['account']}
+        newpiece = {'message':message,'timestamp':tag['timestamp'],'account':tag['account'],'xi':isxi}
         newhash = base64.encodestring(hashlib.md5(message + tag['timestamp']).digest()).strip()
         newkey = base64.encodestring(sender)
         if db.has_key(newkey) == False:
@@ -66,7 +66,11 @@ def handle_kernel(sender,receiver,tag,message):
         else:
             db[newkey][newhash] = newpiece
         db.close()
-        notifier.gnotify('来自 %s 的消息' % sender, message)
+
+        if isxi:
+            notifier.gnotify('来自 %s 的机密消息' % sender,message)
+        else:
+            notifier.gnotify('来自 %s 的普通消息' % sender, message)
     except Exception,e:
         print "Error saving message: %s" % e
     # Remove database lock

@@ -151,9 +151,13 @@ class message_list(object):
         self.userlist_var.trace('w',self.refresh_message)
         self.userlist.grid(row=0,column=1,columnspan=2,sticky=N+S+W+E)
         # Create Message Box
-        self.message = Text(self.root,width=50,height=20)
+        self.messageframe = Frame(self.root)
+
+        self.message = Text(self.messageframe,width=50,height=20)
         self.message.config(state=DISABLED)
-        self.message.grid(row=1,column=0,columnspan=3)
+        self.message.grid(row=0,column=0,padx=3,pady=3)
+
+        self.messageframe.grid(row=1,column=0,columnspan=3)
         # Create Navigate Button and Labels
         self.prevbutton = Button(self.root)
         self.prevbutton['text'] = '上一条'
@@ -198,9 +202,17 @@ class message_list(object):
         self.root.update_idletasks()
     def set_message(self,message):
         self.message.config(state=NORMAL)
+
         self.message.delete(1.0,END)
         self.message.insert(END,message['message'])
+        if message['xi']:
+            self.messageframe.config(bg='#3BBD08')
+        else:
+            self.messageframe.config(bg='#FFF')
+
         self.message.config(state=DISABLED)
+
+
         timestamp = int(message['timestamp']) - time.timezone
         timetuple = time.gmtime(timestamp)
         self.timelabel['text'] = time.strftime('%Y-%m-%d %H:%M:%S GMT',timetuple)
