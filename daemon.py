@@ -6,9 +6,8 @@ import ConfigParser, sys, os, pycurl, StringIO, urllib, json, shelve, hashlib, h
 import hashcash,notifier,processor,aes,curlhttp
 from Tkinter import *
 
-BASEPATH = os.path.dirname(sys.argv[0])
-if BASEPATH != '':
-    BASEPATH += '/'
+BASEPATH = os.path.realpath(os.path.dirname(sys.argv[0]))
+
 def find_jsonstr(retrived):
     ret_begin = retrived.find('{')
     ret_end = retrived.find('}')
@@ -118,7 +117,7 @@ if __name__ == '__main__':
     accounts = {}
     
     accountfile = ConfigParser.ConfigParser()
-    accountfile.read(BASEPATH + 'configs/accounts.cfg')
+    accountfile.read(os.path.join(BASEPATH,'configs','accounts.cfg'))
     
     for secname in accountfile.sections():
         accounts[secname] = {
@@ -134,7 +133,7 @@ if __name__ == '__main__':
     
     def job():
         global accounts,last_message_notify,BASE_PATH
-        sh = shelve.open(BASEPATH + "configs/orichalcum.db",writeback=True)
+        sh = shelve.open(os.path.join(BASEPATH,"configs","orichalcum.db"),writeback=True)
         
         now = time.time()
         
@@ -170,7 +169,7 @@ if __name__ == '__main__':
                     pm = pull_message(accounts[key]['host'],accounts[key]['user'],accounts[key]['secret'],pullcode,accounts[key]['bits'])
                     if pm != False:
                         print "(Message retrived successfully.)"
-                        # TODO insert postoffice support
+                        #  postoffice support
                         processor.handle(pm,key,accounts[key]['user']) # key is account name(not username).
                     else:
                         print "(Error in retriving message.)"
@@ -187,7 +186,7 @@ if __name__ == '__main__':
             
         sh.close()
 # Start daemon.
-    LOCKFILE = BASEPATH + 'daemonized.lock'
+    LOCKFILE = os.path.join(BASEPATH,'daemonized.lock')
     if os.path.isfile(LOCKFILE):
         # See if previous daemon is running.
         f = open(LOCKFILE,'r')
