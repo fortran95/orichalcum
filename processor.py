@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import notifier,shelve,base64,sys,os,time,hashlib,json
-import plugins,xisupport
+import plugins,xisupport,msgpack
 
 BASEPATH = os.path.realpath(os.path.dirname(sys.argv[0]))
 
@@ -8,29 +8,28 @@ def parse(message,moretags,sender):
     # If this is a marked message(with tags. only tag='im' will be shown, others will be transfered to related programs.
     tag=''
     try:
-        j = json.loads(message)
-        tag = j['tag']
-        message = j['message']
         moretags = json.loads(moretags.decode('hex'))
         moretags['sender'] = sender
+        tag = moretags['tag']
     except:
         tag = 'im'
     return {'tag':tag,'message':message,'more':moretags}
 def handle(message,accountkey,receiver):
     try:
-#       print message['message']
+        coremessage = msgpack.depack(message['message'])
+        is_xi_message = coremessage['xi']
 
         # put message['message'] to Xi
-        tag = json.dumps({'timestamp':message['timestamp'],'account':accountkey}).encode('hex')
+        tag = json.dumps({'tag':coremessage['tag'],'timestamp':message['timestamp'],'account':accountkey}).encode('hex')
 
-        if xisupport.XI_ENABLED:    
-            xisupport.xi_queue(message['sender'],receiver,tag,message['message'],False)
+        if xisupport.XI_ENABLED and is_xi_message:    
+            xisupport.xi_queue(message['sender'],receiver,tag,coremessage['message'],False)
             # Retrive Xi handled messages and parse that.
             handled = xisupport.xi_handled(False)
             for i in handled:
                 handle_kernel(i[0],i[1],i[2],i[3]) # SENDER RECEIVER TAG BODY
         else:
-            handle_kernel(message['sender'],receiver,tag,message['message'])
+            handle_kernel(message['sender'],receiver,tag,coremessage['message'])
     except Exception,e:
         print "Error handling message: %s" % e
 

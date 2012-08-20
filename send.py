@@ -1,7 +1,7 @@
 
 import shelve, ConfigParser, os, sys, json
 from optparse import OptionParser,OptionGroup
-import daemon,windows,xisupport
+import daemon,windows,xisupport,msgpack
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -41,14 +41,15 @@ if not options.omit:
     # Read file to get message
     if options.input == False:
         try:
-            userinput = windows.inputbox(options.receiver,options.account)
+            userinput = windows.inputbox(options.receiver,options.account,(xisupport.XI_ENABLED and options.usexi))
             message = userinput['text']
             user_usexi = userinput['xi']
             if message == False:
                 print "User cancelled."
                 exit()
         except Exception,e:
-            pass
+            print "Error getting input: %s" % e
+            exit()
     else:
         try:
             fp = open(options.input,'r')
@@ -58,14 +59,11 @@ if not options.omit:
             print "File reading error: %s" % e
             exit()
 
-    # Pack message.
-    message = json.dumps({'tag':options.tag,'message':message})
-
 # xi.postoffice support here.
 if xisupport.XI_ENABLED and (options.usexi or user_usexi):
 
     if not options.omit:
-        tag = json.dumps({'host':host,'secret':secret,'bits':bits}).encode('hex')
+        tag = json.dumps({'host':host,'secret':secret,'bits':bits,'tag':options.tag}).encode('hex')
         xisupport.xi_queue(user,options.receiver,tag,message)
 
     handleds = xisupport.xi_handled(True)
@@ -77,14 +75,20 @@ if xisupport.XI_ENABLED and (options.usexi or user_usexi):
             user     = p[0] # SENDER
             secret   = tag['secret']
             receiver = p[1] # RECEIVER
-            message  = p[3] # BODY
+            
+            # BODY
+            message  = msgpack.enpack(tag['tag'],p[3],True)
+
             bits     = tag['bits']
 
             print "[%s] to [%s] is pushing." % (user,receiver)
+
+            print message
 
             daemon.push_message(host,user,secret,receiver,message,bits) # TODO make this special to easily distinguish with non-Xi processed messages
         except Exception,e:
             print "Failed a letter: %s" % e
             continue
 elif not options.omit:
+    message = msgpack.enpack(options.tag,message,False)
     print daemon.push_message(host,user,secret,options.receiver,message,bits)
