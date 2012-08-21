@@ -34,6 +34,17 @@ def victoria_decrypt(inputstr,key):
         if inputstr == '':
             break
     return output
+def query_onlinestate(server,username,bits=23):
+    hc = hashcash.hashcash(username,username,bits).strip()
+    url = "https://%s/online.php" % server
+    post = {'hashcash':hc}
+    retrived = curlhttp.http(url,post)
+    if retrived == False:
+        return False
+    try:
+        return int(retrived.strip())
+    except:
+        return False
 def check_messages_list(server,username,secret,bits=22):
     hc = hashcash.hashcash(username,username,bits).strip()
     hc_sha1 = hashlib.sha1(hc).hexdigest().lower()
