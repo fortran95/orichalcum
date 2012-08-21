@@ -23,7 +23,7 @@ class Editor(object):
         self.receiver.grid(row=0,column=1,columnspan=1,sticky=N+E+W+S)
 
         self.recstatus = Label(master,anchor=W)
-        def refreshstat(u=userstat):
+        def refreshstat(m=master,u=userstat):
             olstate = online.get_status(u[0],u[1])
 
             if   olstate == -2:
@@ -31,13 +31,14 @@ class Editor(object):
             elif olstate == -1:
                 self.recstatus.config(text='离开很久了',fg='#C90')
             elif olstate == 0:
-                self.recstatus.config(text='信号不好',fg='#AF0')
+                self.recstatus.config(text='信号不好',fg='#6A0')
             elif olstate == 1:
                 self.recstatus.config(text='当前在线',fg='#0A0')
             else:
                 self.recstatus.config(text='无法获取连通状态',fg='#F00')
-        refreshstat()
-        master.after(3300,refreshstat)
+
+            m.after(3300,refreshstat)
+        master.after(0,refreshstat)
         self.recstatus.grid(row=0,column=2,sticky=N+E+W+S)
         
         self.account = Label(master,anchor=W)
