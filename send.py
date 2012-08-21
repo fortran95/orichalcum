@@ -41,8 +41,7 @@ if not options.omit:
     # Read file to get message
     if options.input == False:
         try:
-            print "Querying online status."
-            onlinestate = online.get_status(host,user,20)
+            onlinestate = online.get_status(host,user)
             userinput = windows.inputbox(options.receiver,options.account,(xisupport.XI_ENABLED and options.usexi),onlinestate)
             message = userinput['text']
             user_usexi = userinput['xi']

@@ -7,6 +7,7 @@ import hashcash,notifier,processor,aes,curlhttp
 from Tkinter import *
 
 BASEPATH = os.path.realpath(os.path.dirname(sys.argv[0]))
+ONLINECACHE = os.path.join(BASEPATH,'configs','online.db')
 
 def find_jsonstr(retrived):
     ret_begin = retrived.find('{')
@@ -143,7 +144,9 @@ if __name__ == '__main__':
     last_message_notify = 0
     
     def job():
-        global accounts,last_message_notify,BASE_PATH
+        global accounts,last_message_notify,BASEPATH,ONLINECACHE
+
+        # Job #1 List new messages
         sh = shelve.open(os.path.join(BASEPATH,"configs","orichalcum.db"),writeback=True)
         
         now = time.time()
@@ -165,7 +168,7 @@ if __name__ == '__main__':
                         sh['accounts'][key]['codes'].append(code)
                 else:
                     print codes
-        # Pull messages
+        # Job #2: Pull messages
         for key in accounts:
             if now - accounts[key]['lastpull'] > 30:
                 accounts[key]['lastpull'] = now
@@ -196,6 +199,28 @@ if __name__ == '__main__':
             last_message_notify = now                
             
         sh.close()
+
+        # Job #3: Refresh Online Cache
+        try:
+            required = []
+            olcache = shelve.open(ONLINECACHE)
+            for server in olcache:
+                for user in olcache[server]:
+                    if olcache[server][user]['wantupdate']:
+                        required.append({'server':server,'user':user})
+            olcache.close()
+
+            for each in required:
+                each['result'] = query_onlinestate(each['server'],each['user'],20)
+
+            olcache = shelve.open(ONLINECACHE,writeback=True)
+            for each in required:
+                olcache[each['server']][each['user']] = {'lastcheck':each['result'],'lastupdate':time.time(),'wantupdate':False}
+            olcache.close()
+
+        except Exception,e:
+            print "Error refreshing online cache: %s" % e
+
 # Start daemon.
     LOCKFILE = os.path.join(BASEPATH,'daemonized.lock')
     if os.path.isfile(LOCKFILE):
