@@ -1,7 +1,7 @@
 
 import shelve, ConfigParser, os, sys, json
 from optparse import OptionParser,OptionGroup
-import daemon,windows,xisupport,msgpack,online
+import daemon,windows,xisupport,msgpack
 
 BASEPATH = os.path.dirname(sys.argv[0])
 if BASEPATH != '':
@@ -41,8 +41,7 @@ if not options.omit:
     # Read file to get message
     if options.input == False:
         try:
-            onlinestate = online.get_status(host,user)
-            userinput = windows.inputbox(options.receiver,options.account,(xisupport.XI_ENABLED and options.usexi),onlinestate)
+            userinput = windows.inputbox(options.receiver,options.account,(xisupport.XI_ENABLED and options.usexi),(host,user))
             message = userinput['text']
             user_usexi = userinput['xi']
             if message == False:

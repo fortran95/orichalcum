@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from Tkinter import *
+import online
 
 usertext = ''
 usexi    = False
 class Editor(object):
-    def __init__(self,master,receiver,account,xi,olstate):
+    def __init__(self,master,receiver,account,xi,userstat):
         global usertext,usexi
         usertext = ''
         usexi    = False
@@ -22,18 +23,21 @@ class Editor(object):
         self.receiver.grid(row=0,column=1,columnspan=1,sticky=N+E+W+S)
 
         self.recstatus = Label(master,anchor=W)
-        
-        if   olstate == -2:
-            self.recstatus.config(text='当前离线',fg='#950')
-        elif olstate == -1:
-            self.recstatus.config(text='离开很久了',fg='#C90')
-        elif olstate == 0:
-            self.recstatus.config(text='信号不好',fg='#AF0')
-        elif olstate == 1:
-            self.recstatus.config(text='当前在线',fg='#0A0')
-        else:
-            self.recstatus.config(text='无法获取连通状态',fg='#F00')
-        
+        def refreshstat(u=userstat):
+            olstate = online.get_status(u[0],u[1])
+
+            if   olstate == -2:
+                self.recstatus.config(text='当前离线',fg='#950')
+            elif olstate == -1:
+                self.recstatus.config(text='离开很久了',fg='#C90')
+            elif olstate == 0:
+                self.recstatus.config(text='信号不好',fg='#AF0')
+            elif olstate == 1:
+                self.recstatus.config(text='当前在线',fg='#0A0')
+            else:
+                self.recstatus.config(text='无法获取连通状态',fg='#F00')
+        refreshstat()
+        master.after(3300,refreshstat)
         self.recstatus.grid(row=0,column=2,sticky=N+E+W+S)
         
         self.account = Label(master,anchor=W)
